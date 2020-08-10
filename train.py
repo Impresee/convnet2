@@ -14,8 +14,8 @@ if __name__ == '__main__' :
     parser.add_argument("-name", type=str, help=" name of section in the configuration file", required = True)
     parser.add_argument("-gpu", type=str, help=" choose gpu device", required = False)
     pargs = parser.parse_args() 
-    id_gpu = "0"
-    if not pargs.gpu is not None :
+    id_gpu = '0'
+    if  pargs.gpu is not None :
         id_gpu = pargs.gpu
     os.environ["CUDA_VISIBLE_DEVICES"]=id_gpu    
     configuration_file = pargs.config
@@ -66,6 +66,10 @@ if __name__ == '__main__' :
     #build the model indicating the input shape
     model.build((1, input_shape[0], input_shape[1], input_shape[2]))
     model.summary()
+    
+    if configuration.use_checkpoint() :
+        model.load_weights(tf.train.latest_checkpoint(configuration.get_checkpoint_file()))
+        #model.load_weights(configuration.get_checkpoint_file() + '{epoch:03d}')
     #define the training parameters
     #Here, you can test SGD vs Adam
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate = configuration.get_learning_rate()), # 'adam'     
