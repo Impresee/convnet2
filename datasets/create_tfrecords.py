@@ -19,14 +19,9 @@ if __name__ == '__main__':
     configuration_file = pargs.config
     #assert os.path.exists(configuration_file), "configuration file does not exist {}".format(configuration_file)   
     configuration = conf.ConfigurationFile(configuration_file, pargs.name)               
-    #data.create_tfrecords(configuration.get_data_dir(), pargs.type, (imh, imw), number_of_channels = configuration.get_number_of_channels())
-#     process_fun = imgproc.process_image
-#     if configuration.use_keep_aspect_ratio() :
-#         process_fun = imgproc.process_image_keeping_aspect
-    #resize_image_keeping aspect by default
     process_fun = imgproc.process_image
     if configuration.get_image_type() == 'SKETCH'  : 
-        process_fun = imgproc.process_sketch
+        process_fun = imgproc.process_sketch        
     data.create_tfrecords(configuration, 
                           pargs.type, 
                           processFun = process_fun)

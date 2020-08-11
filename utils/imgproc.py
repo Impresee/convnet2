@@ -98,20 +98,23 @@ def image_crop_rgb(image, bg_color, padding = 0):
     row_proyection = np.sum(_bin, 1)
     col_proyection = np.sum(_bin, 0)
     xs_pos = np.where(col_proyection > 0)[0]
-    ys_pos = np.where(row_proyection > 0)[0]    
-    x_min = xs_pos[0]
-    x_max = xs_pos[-1]
-    y_min = ys_pos[0]
-    y_max = ys_pos[-1]
-    cropped_image = image[y_min:y_max, x_min:x_max]
-    if padding > 0 :
-        im_h = cropped_image.shape[0] + 2*padding
-        im_w = cropped_image.shape[1] + 2*padding
-        shape = (im_h, im_w, 3)
-        new_image = np.ones(shape, np.uint8)*255;
-        new_image[padding : padding + cropped_image.shape[0], padding : padding + cropped_image.shape[1], :] = cropped_image;
-    else :    
-        new_image = cropped_image
+    ys_pos = np.where(row_proyection > 0)[0]
+    if (len(xs_pos) > 1 and len(ys_pos > 0)) :    
+        x_min = xs_pos[0]
+        x_max = xs_pos[-1]
+        y_min = ys_pos[0]
+        y_max = ys_pos[-1]
+        cropped_image = image[y_min:y_max, x_min:x_max]
+        if padding > 0 :
+            im_h = cropped_image.shape[0] + 2*padding
+            im_w = cropped_image.shape[1] + 2*padding
+            shape = (im_h, im_w, 3)
+            new_image = np.ones(shape, np.uint8)*255;
+            new_image[padding : padding + cropped_image.shape[0], padding : padding + cropped_image.shape[1], :] = cropped_image;
+        else :    
+            new_image = cropped_image
+    else :
+        new_image = image
     return new_image
      
 def process_sketch(image, output_size):    

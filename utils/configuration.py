@@ -6,10 +6,12 @@ class ConfigurationFile:
      convolutional neural network
     """    
     def __init__(self, str_config, modelname):
-        config = SafeConfigParser({'USE_MULTITHREADS' : False, 
-                                   'NUM_THREADS' : 1,
-                                   'IMAGE_SIZE': 1,
-                                   'IMAGE_TYPE': 'IMAGE'})
+        config = SafeConfigParser({'USE_MULTITHREADS' : 'False',                                    
+                                   'IMAGE_SIZE': '1',
+                                   'IMAGE_TYPE': 'IMAGE',
+                                   'CKPFILE': 'NONE',
+                                   'KEEP_ASPECT_RATIO' : 'True'
+                                   })
         config.read(str_config)
         self.sections = config.sections()                
         if modelname in self.sections:
@@ -30,12 +32,14 @@ class ConfigurationFile:
                 self.snapshot_prefix = config.get(modelname, "SNAPSHOT_DIR")
                 self.data_dir = config.get(modelname,"DATA_DIR")
                 self.channels = config.getint(modelname,"CHANNELS")
-                self.keep_aspect_ratio = config.getboolean(modelname, "KEEP_ASPECT_RATIO")
+                self.keep_aspect_ratio = config.getboolean(modelname, "KEEP_ASPECT_RATIO")                            
                 self.image_size = config.getint(modelname, "IMAGE_SIZE")
                 self.image_width = config.getint(modelname, "IMAGE_WIDTH")
-                self.image_height = config.getint(modelname, "IMAGE_HEIGHT")
+                self.image_height = config.getint(modelname, "IMAGE_HEIGHT")                
                 self.image_type = config.get(modelname, "IMAGE_TYPE").upper()
+                self.checkpoint_file = config.get(modelname, "CKPFILE")
                 self.is_multithreads = config.getboolean(modelname, "USE_MULTITHREADS")
+                self.num_threads = 1
                 if self.is_multithreads :
                     self.num_threads = config.getint(modelname, "NUM_THREADS")
                 assert(self.channels == 1 or self.channels == 3)                
@@ -105,8 +109,19 @@ class ConfigurationFile:
     def get_image_type(self):
         return self.image_type
     
+    def use_checkpoint(self):
+        use_ckp = False
+        if self.checkpoint_file != "NONE" :
+            use_ckp = True
+        return use_ckp
+    
+    def get_checkpoint_file(self):
+        return self.checkpoint_file
+    
     def show(self):
         print("NUM_EPOCHS: {}".format(self.get_number_of_epochs()))        
         print("LEARNING_RATE: {}".format(self.get_learning_rate()))                
         print("SNAPSHOT_DIR: {}".format(self.get_snapshot_dir()))
         print("DATA_DIR: {}".format(self.get_data_dir()))
+        print("USE_CHECKP: {}".format(self.use_checkpoint()))
+        print("IMAGE_TYPE: {}".format(self.get_image_type()))

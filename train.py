@@ -53,7 +53,7 @@ if __name__ == '__main__' :
     
     #Defining callback for saving checkpoints
     model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-        filepath=configuration.get_snapshot_dir() + '{epoch:03d}',
+        filepath=configuration.get_snapshot_dir() + '{epoch:03d}.h5',
         save_weights_only=True,
         monitor='val_accuracy',
         mode='max',
@@ -62,14 +62,14 @@ if __name__ == '__main__' :
     #DigitModel is instantiated
     #model = DigitModel()
     
-    model = resnet.ResNet([3,4,6,3],[64,128,256,512], configuration.get_number_of_classes(), se_factor = 0)
+    model = resnet.ResNet([3,4,6,3],[64,128,256,512], configuration.get_number_of_classes(), se_factor = 8)
     #build the model indicating the input shape
     model.build((1, input_shape[0], input_shape[1], input_shape[2]))
     model.summary()
-    
+    #model.save_weights(os.path.join(configuration.get_snapshot_dir(),'chk_sample'), save_format='h5')
     if configuration.use_checkpoint() :
-        model.load_weights(tf.train.latest_checkpoint(configuration.get_checkpoint_file()))
-        #model.load_weights(configuration.get_checkpoint_file() + '{epoch:03d}')
+        #model.load_weights(tf.train.latest_checkpoint(configuration.get_checkpoint_file()))        
+        model.load_weights(configuration.get_checkpoint_file(), by_name = True, skip_mismatch = True)
     #define the training parameters
     #Here, you can test SGD vs Adam
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate = configuration.get_learning_rate()), # 'adam'     
