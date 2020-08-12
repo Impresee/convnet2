@@ -10,7 +10,10 @@ class ConfigurationFile:
                                    'IMAGE_SIZE': '1',
                                    'IMAGE_TYPE': 'IMAGE',
                                    'CKPFILE': 'NONE',
-                                   'KEEP_ASPECT_RATIO' : 'True'
+                                   'KEEP_ASPECT_RATIO' : 'True',
+                                   'USE_L2' : 'False',
+                                   'WEIGHT_DECAY' : '0.0',
+                                   'SHUFFLE_SIZE' : '1000'
                                    })
         config.read(str_config)
         self.sections = config.sections()                
@@ -38,6 +41,11 @@ class ConfigurationFile:
                 self.image_height = config.getint(modelname, "IMAGE_HEIGHT")                
                 self.image_type = config.get(modelname, "IMAGE_TYPE").upper()
                 self.checkpoint_file = config.get(modelname, "CKPFILE")
+                self.use_l2 = config.getboolean(modelname, "USE_L2")
+                self.shuffle_size = config.getint(modelname, "SHUFFLE_SIZE")
+                self.weight_decay = 0.0
+                if self.use_l2 :
+                    self.weight_decay = config.getfloat(modelname, 'WEIGHT_DECAY')
                 self.is_multithreads = config.getboolean(modelname, "USE_MULTITHREADS")
                 self.num_threads = 1
                 if self.is_multithreads :
@@ -117,6 +125,15 @@ class ConfigurationFile:
     
     def get_checkpoint_file(self):
         return self.checkpoint_file
+    
+    def use_l2_regularization(self):
+        return self.use_l2
+    
+    def get_weight_decay(self):
+        return self.weight_decay
+    
+    def get_shuffle_size(self):
+        return self.shuffle_size
     
     def show(self):
         print("NUM_EPOCHS: {}".format(self.get_number_of_epochs()))        
