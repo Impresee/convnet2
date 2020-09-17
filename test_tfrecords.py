@@ -36,10 +36,9 @@ if __name__ == '__main__' :
      
     tr_dataset = tf.data.TFRecordDataset(tfr_train_file)
     tr_dataset = tr_dataset.map(lambda x : data.parser_tfrecord(x, input_shape, mean_image, number_of_classes, 'test'));    
-    tr_dataset = tr_dataset.shuffle(10000)        
+    tr_dataset = tr_dataset.shuffle(configuration.get_shuffle_size())        
     tr_dataset = tr_dataset.batch(batch_size = configuration.get_batch_size())    
-    #tr_dataset = tr_dataset.repeat()
-
+    
     fig, xs = plt.subplots(2,5)
     for image,label in tr_dataset:            
         for i in range(10) :
