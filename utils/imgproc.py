@@ -16,8 +16,7 @@ import os
 def read_image_test(filename, number_of_channels):
     """ read_image using skimage
         The output is a 3-dim image [H, W, C]
-    """    
-    print(33333)
+    """        
     if number_of_channels  == 1 :            
         image = io.imread(filename, as_gray = True)
         image = toUINT8(image)
@@ -87,6 +86,8 @@ def resize_image_keeping_aspect(image, output_size):
     return image_out
 
 def image_crop_rgb(image, bg_color, padding = 0):
+    assert(len(image.shape) == 3 and image.shape[2] == 3)
+    assert(len(bg_color) == 3)
     red = image[:,:,0]
     green = image[:,:,1]
     blue = image[:,:,2]    
@@ -109,7 +110,34 @@ def image_crop_rgb(image, bg_color, padding = 0):
             im_h = cropped_image.shape[0] + 2*padding
             im_w = cropped_image.shape[1] + 2*padding
             shape = (im_h, im_w, 3)
-            new_image = np.ones(shape, np.uint8)*255;
+            new_image = np.ones(shape, np.uint8)*np.array(bg_color);
+            new_image = new_image.astype(np.uint8)
+            new_image[padding : padding + cropped_image.shape[0], padding : padding + cropped_image.shape[1], :] = cropped_image;
+        else :    
+            new_image = cropped_image
+    else :
+        new_image = image
+    return new_image
+
+def image_crop_gray(image, bg_color, padding = 0):
+    assert(len(image.shape) == 3 and image.shape[2] == 1)        
+    mask = (image[:,:,0] != bg_color)        
+    row_proyection = np.sum(mask, 1)
+    col_proyection = np.sum(mask, 0)
+    xs_pos = np.where(col_proyection > 0)[0]
+    ys_pos = np.where(row_proyection > 0)[0]
+    if (len(xs_pos) > 1 and len(ys_pos > 0)) :    
+        x_min = xs_pos[0]
+        x_max = xs_pos[-1]
+        y_min = ys_pos[0]
+        y_max = ys_pos[-1]
+        cropped_image = image[y_min:y_max, x_min:x_max]
+        if padding > 0 :
+            im_h = cropped_image.shape[0] + 2*padding
+            im_w = cropped_image.shape[1] + 2*padding
+            shape = (im_h, im_w, 1)
+            new_image = np.ones(shape, np.uint8)*bg_color;
+            new_image = new_image.astype(np.uint8)            
             new_image[padding : padding + cropped_image.shape[0], padding : padding + cropped_image.shape[1], :] = cropped_image;
         else :    
             new_image = cropped_image
@@ -117,7 +145,7 @@ def image_crop_rgb(image, bg_color, padding = 0):
         new_image = image
     return new_image
      
-def process_sketch(image, output_size):    
+def process_sketch(image, output_size):
     new_image = image_crop_rgb(image, (255,255,255), padding = 20)
     new_image = resize_image_keeping_aspect(new_image, output_size)
     one_channel = new_image[:,:,0]
@@ -127,11 +155,38 @@ def process_sketch(image, output_size):
     new_image[:,:,2] = one_channel;         
     return new_image
 
+def process_mnist(image, output_size):
+    new_image = image_crop_gray(image, 255, padding = 10)
+    new_image = resize_image_keeping_aspect(new_image, output_size)             
+    return new_image
+
 def process_image(image, output_size):
     image = image_crop_rgb(image, (255,255,255), padding = 20)
     image = resize_image_keeping_aspect(image, output_size)
     return image    
 
+def create_processing_function(imgproc_params):
+    keep_aspect_ratio = imgproc_params['keep_aspect_ratio']
+    padding_value = imgproc_params['padding_value']
+    with_crop = imgproc_params['with_crop']
+    bg_color = imgproc_params['bg_color']
+    n_channels = imgproc_params['n_channels']
+    
+    def process_fun(image, output_size):
+        if with_crop :
+            if n_channels == 1 :
+                f_crop = image_crop_gray
+            if n_channels == 3 :
+                f_crop = image_crop_rgb
+            image =  f_crop(image, bg_color, padding_value)
+        if keep_aspect_ratio :
+            f_resize = resize_image_keeping_aspect
+        else :
+            f_resize = resize_image
+        image = f_resize(image, output_size)
+        return image
+    return process_fun       
+    
 def change_color(image):
     """
     change the color of an image
@@ -155,32 +210,45 @@ if __name__ == '__main__' :
     #parser.add_argument("-max_size", type = int, help = "max size of the image dimensions", required = True )
     pargs = parser.parse_args()     
     filename = pargs.image
-    image = read_image_test(filename, 3)
-    print(image.shape)
+    
+    imgproc_params={}
+    imgproc_params['keep_aspect_ratio'] = True
+    imgproc_params['padding_value'] = 0
+    imgproc_params['with_crop'] = True
+    #a =0    
+    #imgproc_params['bg_color'] = [int(v.strip()) for v in a.split()]
+    imgproc_params['bg_color'] = 0
+    imgproc_params['n_channels'] = 1    
     #image = process_sketch(image, (224,224))
-    image = process_image(image, (224,224))
+    #image = process_mnist(image, (50,50))
+    image = read_image_test(filename, imgproc_params['n_channels'])        
+    process_fun = create_processing_function(imgproc_params)
+    image = process_fun(image, (31,31))
+    print(image.shape)
+    plt.imshow(image)
+    plt.show()
     #print(image.shape)   
     #new_image = tf.image.adjust_hue(image, 0.5)
     #new_image = tf.image.adjust_contrast(image, 2)
     #new_image = tf.image.adjust_brightness(image, -0.3)
-    height = image.shape[0]
-    width = image.shape[1]
-    prob = tf.random.uniform((),0,1)
-    if prob > 0.5:
-        #new_image = tf.image.flip_left_right(image)
-        #new_image = tf.image.adjust_brightness(image, 0.2)#random.uniform(-0.5,0.5))
-        #new_image = tf.image.adjust_saturation(image,0.6)
-#         a = tf.random.uniform((),0.5,0.9)
-#         print("{} {}".format(prob, a))
-        new_image = tf.image.central_crop(image, central_fraction = 0.8)
-        new_image = tf.cast(tf.image.resize(new_image, (height, width)), tf.uint8)
-    else :
-        new_image = image
-    #print(new_image)            
-    fig, xs = plt.subplots(1,2)
-    xs[0].imshow(image)
-    xs[1].imshow(new_image)
-    plt.show()
+#     height = image.shape[0]
+#     width = image.shape[1]
+#     prob = tf.random.uniform((),0,1)
+#     if prob > 0.5:
+#         #new_image = tf.image.flip_left_right(image)
+#         #new_image = tf.image.adjust_brightness(image, 0.2)#random.uniform(-0.5,0.5))
+#         #new_image = tf.image.adjust_saturation(image,0.6)
+# #         a = tf.random.uniform((),0.5,0.9)
+# #         print("{} {}".format(prob, a))
+#         new_image = tf.image.central_crop(image, central_fraction = 0.8)
+#         new_image = tf.cast(tf.image.resize(new_image, (height, width)), tf.uint8)
+#     else :
+#         new_image = image
+#     #print(new_image)            
+#     fig, xs = plt.subplots(1,2)
+#     xs[0].imshow(image)
+#     xs[1].imshow(new_image)
+#     plt.show()
     """max_size = pargs.max_size
     print(filename)
     try:
